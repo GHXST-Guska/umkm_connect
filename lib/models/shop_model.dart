@@ -3,15 +3,17 @@ import 'package:umkm_connect/models/user_model.dart';
 class ShopModel {
   final int id;
   final String name;
+  final String? fotoKtp;
   final String status;
   final int? userId;
   final String? fotoKtpUrl;
-  final String? fotoProfilTokoUrl; // Tambahkan untuk foto profil toko
-  final UserModel? user;
+  final String? fotoProfilTokoUrl;
+  final UserProfile? user;
 
   ShopModel({
     required this.id,
     required this.name,
+    this.fotoKtp,
     required this.status,
     this.userId,
     this.fotoKtpUrl,
@@ -19,23 +21,20 @@ class ShopModel {
     this.user,
   });
 
-  // lib/models/shop_model.dart
   factory ShopModel.fromJson(Map<String, dynamic> json) {
     return ShopModel(
       id: json['id'],
-      name: json['name'] ?? 'Nama Toko Tidak Ada',
-      status: json['status'] ?? 'pending',
-      // Beri nilai default jika user_id null dari API
-      userId: json['user_id'], 
-      
-      // Asumsikan accessor di backend sudah Anda buat
+      name: json['name'],
+      fotoKtp: json['foto_ktp'],
+      status: json['status'],
+      userId: json['user_id'],
       fotoKtpUrl: json['foto_ktp_url'], 
       fotoProfilTokoUrl: json['foto_profil_toko_url'],
 
       // INI BAGIAN PENTING:
       // Cek dulu apakah 'user' ada di dalam JSON sebelum di-parse
       user: json.containsKey('user') && json['user'] != null 
-          ? UserModel.fromJson(json['user']) 
+          ? UserProfile.fromJson(json['user']) 
           : null,
     );
   }

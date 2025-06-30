@@ -13,7 +13,7 @@ class UserDetailPage extends StatefulWidget {
 }
 
 class _UserDetailPageState extends State<UserDetailPage> {
-  late Future<UserModel> _userFuture;
+  late Future<UserProfile> _userFuture;
   final APIStatic _api = APIStatic();
   bool _isProcessing = false;
 
@@ -60,7 +60,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Detail Pengguna")),
-      body: FutureBuilder<UserModel>(
+      body: FutureBuilder<UserProfile>(
         future: _userFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -87,12 +87,12 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         backgroundColor: Colors.grey.shade200, // Warna latar belakang untuk fallback
                         
                         // Secara kondisional menampilkan gambar dari URL
-                        backgroundImage: (user.imageUrl != null && user.imageUrl!.isNotEmpty) 
-                            ? NetworkImage(user.imageUrl!) 
+                        backgroundImage: (user.pathImageUrl != null && user.pathImageUrl!.isNotEmpty) 
+                            ? NetworkImage(user.pathImageUrl!) 
                             : null,
 
                         // Tampilkan Icon HANYA JIKA tidak ada gambar
-                        child: (user.imageUrl != null && user.imageUrl!.isNotEmpty)
+                        child: (user.pathImageUrl!= null && user.pathImageUrl!.isNotEmpty)
                             ? null // Kosongkan child jika ada gambar
                             : Icon(
                                 user.role == 'admin' ? Icons.shield_outlined : Icons.person,

@@ -137,7 +137,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
 
                       // Kreator & Playlist
                       _buildDetailRow(Icons.person, "Kreator", content.creator),
-                      _buildDetailRow(Icons.playlist_play, "Playlist", content.playlist ?? 'Tidak ada'),
+                      _buildDetailRow(Icons.playlist_play, "Playlist", content.playlist),
                       const Divider(height: 32),
 
                       // Deskripsi

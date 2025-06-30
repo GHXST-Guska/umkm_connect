@@ -4,8 +4,8 @@ class ContentModel {
   final String videoId;
   final String description;
   final String creator;
-  final String? playlist;
-  final String? thumbnail; // URL untuk thumbnail
+  final String playlist;
+  final String thumbnail;
 
   ContentModel({
     required this.id,
@@ -13,17 +13,17 @@ class ContentModel {
     required this.videoId,
     required this.description,
     required this.creator,
-    this.playlist,
-    this.thumbnail,
+    required this.playlist,
+    required this.thumbnail,
   });
 
   factory ContentModel.fromJson(Map<String, dynamic> json) {
     return ContentModel(
       id: json['id'],
-      title: json['title'] ?? 'Tanpa Judul',
-      videoId: json['video'] ?? '', // Mengambil dari key 'video'
-      description: json['description'] ?? '',
-      creator: json['creator'] ?? 'Anonim',
+      title: json['title'],
+      videoId: json['video'],
+      description: json['description'],
+      creator: json['creator'],
       playlist: json['playlist'],
       thumbnail: json['thumbnail'],
     );

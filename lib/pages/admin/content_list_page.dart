@@ -63,8 +63,8 @@ class _ContentListPageState extends State<ContentListPage> {
               itemBuilder: (context, index) {
                 final content = contents[index];
                 return ListTile(
-                  leading: content.thumbnail != null
-                      ? Image.network(content.thumbnail!, width: 100, fit: BoxFit.cover)
+                  leading: content.thumbnail != Null
+                      ? Image.network(content.thumbnail, width: 100, fit: BoxFit.cover)
                       : const Icon(Icons.video_library),
                   title: Text(content.title),
                   subtitle: Text(content.creator),

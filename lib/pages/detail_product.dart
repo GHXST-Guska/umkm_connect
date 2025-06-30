@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:umkm_connect/models/product_model.dart';
 import 'package:umkm_connect/services/api_static.dart';
 
-class DetailPage extends StatelessWidget {
+class DetailProduct extends StatelessWidget {
   final ProductModel item;
 
-  const DetailPage({super.key, required this.item});
+  const DetailProduct({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink.shade50,
+      backgroundColor: const Color(0xFFFDF6FA),
       appBar: AppBar(
-        title: Text(item.title), // Judul AppBar sesuai nama produk
+        title: Text("Produk"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.pink,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), // beri padding bawah agar shadow terlihat
         children: [
           // 🖼 Gambar besar
           ClipRRect(
@@ -48,7 +48,7 @@ class DetailPage extends StatelessWidget {
             children: [
               Icon(Icons.star, color: Colors.orange.shade400, size: 20),
               const SizedBox(width: 4),
-              const Text('4.8 (rating)'), // Anda bisa menambahkan rating di model
+              Text(item.rating),
               const Spacer(),
               Text(
                 'Rp ${item.price}',
@@ -62,7 +62,7 @@ class DetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // 📍 Lokasi dan 🏷 Kategori
+          // 📍 Lokasi dan Kategori
           Row(
             children: [
               const Icon(Icons.location_on, size: 18, color: Colors.grey),
@@ -88,31 +88,32 @@ class DetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 🛍️ Rekomendasi Serupa
+          // 🛍️ Rekomendasi
           const Text(
             'Rekomendasi Serupa',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 10),
-          _buildSimilarProducts(),
+          _buildSimilarProducts(item),
+          const SizedBox(height: 20), // agar card terakhir tidak terpotong
         ],
       ),
     );
   }
 
-  Widget _buildSimilarProducts() {
+  Widget _buildSimilarProducts(ProductModel item) {
     return FutureBuilder<List<ProductModel>>(
       future: APIStatic().getAllProducts(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: SizedBox(height: 100, child: CircularProgressIndicator()));
+          return const Center(
+              child: SizedBox(height: 100, child: CircularProgressIndicator()));
         }
 
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return const Text("Gagal memuat rekomendasi.");
         }
 
-        // Filter rekomendasi berdasarkan kategori yang sama, dan bukan produk ini sendiri
         final similar = snapshot.data!
             .where((e) => e.category == item.category && e.id != item.id)
             .take(5)
@@ -123,41 +124,46 @@ class DetailPage extends StatelessWidget {
         }
 
         return SizedBox(
-          height: 180, // Sesuaikan tinggi agar pas
+          height: 180,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(right: 16),
             itemCount: similar.length,
             itemBuilder: (context, index) {
               final simItem = similar[index];
-              return SizedBox(
+              return Container(
                 width: 140,
+                margin: const EdgeInsets.only(left: 12),
                 child: GestureDetector(
                   onTap: () {
-                    // Gunakan pushReplacement agar tidak menumpuk halaman detail
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => DetailPage(item: simItem),
+                        builder: (_) => DetailProduct(item: simItem),
                       ),
                     );
                   },
                   child: Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 3,
-                    margin: const EdgeInsets.only(right: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
                           child: Image.network(
                             simItem.imageUrl ?? '',
                             height: 80,
                             width: double.infinity,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => const SizedBox(
-                                height: 80,
-                                child: Center(child: Icon(Icons.broken_image, size: 40))),
+                              height: 80,
+                              child: Center(child: Icon(Icons.broken_image)),
+                            ),
                           ),
                         ),
                         Padding(
@@ -165,10 +171,12 @@ class DetailPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(simItem.title,
-                                  maxLines: 2, // Beri ruang lebih
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w500)),
+                              Text(
+                                simItem.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 'Rp ${simItem.price}',

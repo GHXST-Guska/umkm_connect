@@ -13,7 +13,7 @@ class UserListPage extends StatefulWidget {
 }
 
 class _UserListPageState extends State<UserListPage> {
-  late Future<List<UserModel>> _usersFuture;
+  late Future<List<UserProfile>> _usersFuture;
   final APIStatic _api = APIStatic();
 
   @override
@@ -42,7 +42,7 @@ class _UserListPageState extends State<UserListPage> {
       appBar: AppBar(title: const Text("Manajemen Pengguna")),
       body: RefreshIndicator(
         onRefresh: _loadUsers,
-        child: FutureBuilder<List<UserModel>>(
+        child: FutureBuilder<List<UserProfile>>(
           future: _usersFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {

@@ -1,27 +1,34 @@
-// lib/models/user_model.dart
-
-class UserModel {
+class UserProfile {
   final int id;
   final String name;
   final String email;
   final String role;
-  final String? imageUrl;
+  final String? pathImage;
+  final String? pathImageUrl;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  UserModel({
+  UserProfile({
     required this.id,
     required this.name,
     required this.email,
     required this.role,
-    required this.imageUrl
+    required this.pathImage,
+    required this.pathImageUrl,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
       id: json['id'],
       name: json['name'],
       email: json['email'],
       role: json['role'],
-      imageUrl: json['image_url'],
+      pathImage: json['path_image'],
+      pathImageUrl: json['image_url'],
+      createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 }

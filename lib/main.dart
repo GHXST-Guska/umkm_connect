@@ -64,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
       try {
         // Jika token ada, coba ambil profil untuk mendapatkan role
         final userProfile = await _api.getUserProfile();
-        final role = userProfile['role'];
+        final role = userProfile.role;
         
         if (!mounted) return; // Pastikan widget masih ada
 

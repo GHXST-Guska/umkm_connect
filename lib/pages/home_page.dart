@@ -2,7 +2,9 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:umkm_connect/services/api_static.dart';
 import 'package:umkm_connect/models/product_model.dart';
-import 'package:umkm_connect/pages/detail_page.dart';
+import 'package:umkm_connect/models/content_model.dart';
+import 'package:umkm_connect/pages/detail_product.dart';
+import 'package:umkm_connect/pages/detail_video.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,20 +15,22 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final APIStatic _api = APIStatic();
-  List<ProductModel> _allProducts = []; // Ganti nama variabel agar lebih jelas
+  List<ProductModel> _allProducts = [];
+  List<ContentModel> _allVideos = [];
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _loadData();
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadData() async {
     try {
-      // Panggil method yang benar dari API service
-      final data = await _api.getAllProducts(); 
+      final products = await _api.getAllProducts();
+      final contents = await _api.getAllContents();
       setState(() {
-        _allProducts = data;
+        _allProducts = products;
+        _allVideos = contents.take(6).toList(); // Ambil maksimal 6 video
       });
     } catch (e) {
       if (mounted) {
@@ -40,7 +44,6 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final populer = _allProducts.take(5).toList();
-    // final diskon = _allProducts.where((e) => e.price < 50000).take(5).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6FA),
@@ -50,12 +53,9 @@ class _HomePageState extends State<HomePage> {
           children: [
             _buildCarousel(),
             _buildSectionTitle('🔥 Terpopuler'),
-            _buildHorizontalList(populer),
+            _buildProductList(populer),
             _buildSectionTitle('🎓 Yuk Belajar Lagi!'),
-            // Untuk section kedua, Anda mungkin ingin menampilkan data yang berbeda,
-            // misalnya konten edukasi, bukan produk diskon.
-            // Namun untuk saat ini kita gunakan data yang sama.
-            _buildHorizontalList(populer),
+            _buildVideoList(_allVideos),
           ],
         ),
       ),
@@ -106,11 +106,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildHorizontalList(List<ProductModel> list) {
+  Widget _buildProductList(List<ProductModel> list) {
     return SizedBox(
       height: 180,
       child: list.isEmpty
-          ? const Center(child: Text("Memuat data..."))
+          ? const Center(child: Text("Memuat produk..."))
           : ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -120,26 +120,24 @@ class _HomePageState extends State<HomePage> {
                 final item = list[index];
                 return SizedBox(
                   width: 140,
-                  // TAMBAHKAN GESTUREDETECTOR UNTUK NAVIGASI
                   child: GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => DetailPage(item: item),
+                          builder: (_) => DetailProduct(item: item),
                         ),
                       );
                     },
                     child: Card(
-                      // ... (sisa Card tetap sama) ...
+                      elevation: 3,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                            // GUNAKAN imageUrl dari model
                             child: Image.network(
-                              item.imageUrl ?? '', // Gunakan URL dari accessor
+                              item.imageUrl ?? '',
                               height: 80,
                               width: double.infinity,
                               fit: BoxFit.cover,
@@ -152,14 +150,77 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  item.title, // DIUBAH dari title ke name
-                                  maxLines: 2, // Beri ruang lebih untuk nama
+                                  item.title,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 2),
                                 Text('Rp ${item.price}', style: const TextStyle(color: Colors.pink)),
-                                // ... (sisa Text widget tetap sama) ...
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildVideoList(List<ContentModel> list) {
+    return SizedBox(
+      height: 180,
+      child: list.isEmpty
+          ? const Center(child: Text("Memuat video..."))
+          : ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: list.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final item = list[index];
+                return SizedBox(
+                  width: 140,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetailVideo(contentId: item.id),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      elevation: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                            child: Image.network(
+                              'https://img.youtube.com/vi/${item.videoId}/0.jpg',
+                              height: 80,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(item.creator, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                               ],
                             ),
                           )

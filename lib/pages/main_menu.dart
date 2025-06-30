@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:umkm_connect/pages/home_page.dart';
-import 'package:umkm_connect/pages/product_page.dart';
+import 'package:umkm_connect/pages/product_catalog.dart';
 import 'package:umkm_connect/pages/login_page.dart';
+import 'package:umkm_connect/pages/product_page.dart';
 import 'package:umkm_connect/pages/profile_page.dart';
 import 'package:umkm_connect/pages/video_page.dart';
 import 'package:umkm_connect/services/api_static.dart';
@@ -19,8 +20,9 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = const [
     HomePage(),
+    ProductCatalog(),
     ProductPage(),
-    HalamanVideo(),
+    VideoPage(),
     ProfilePage(),
   ];
 
@@ -86,15 +88,15 @@ class _MainPageState extends State<MainPage> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
               onTap: () => _logout(context),
             ),
           ],
         ),
       ),
       appBar: AppBar(
-        title: const Text('Smart UMKM'),
+        title: const Text('UMKM Connect'),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.pink.shade600,
@@ -116,7 +118,8 @@ class _MainPageState extends State<MainPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.video_collection), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),

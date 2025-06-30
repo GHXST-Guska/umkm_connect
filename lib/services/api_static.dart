@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:umkm_connect/models/umkm_model.dart';
+import 'package:umkm_connect/models/product_model.dart';
 import 'package:umkm_connect/models/content_model.dart';
 
 class APIStatic {
@@ -113,23 +113,25 @@ class APIStatic {
     }
   }
 
-  Future<List<UMKMService>> getUmkmList() async {
+  Future<List<ProductModel>> getAllProducts() async {
     final token = await getToken();
-    final url = Uri.parse(
-      '${_baseUrl}product/getall',
-    ); // Ganti endpoint sesuai backend
+    final url = Uri.parse('${_baseUrl}product/getall');
 
     final response = await http.get(
       url,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+      headers: {
+        'Authorization': 'Bearer $token', 
+        'Accept': 'application/json'
+      },
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final List list = data['data']; // Ganti sesuai struktur JSON
-      return list.map((e) => UMKMService.fromJson(e)).toList();
+      final List list = data['data']; 
+      // Menggunakan ProductModel.fromJson yang sudah kita perbaiki
+      return list.map((e) => ProductModel.fromJson(e)).toList();
     } else {
-      throw Exception('Gagal mengambil data UMKM');
+      throw Exception('Gagal mengambil data produk');
     }
   }
 

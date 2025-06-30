@@ -1,7 +1,8 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:umkm_connect/services/api_static.dart';
-import 'package:umkm_connect/models/umkm_model.dart';
+import 'package:umkm_connect/models/product_model.dart';
+import 'package:umkm_connect/pages/detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,19 +13,20 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final APIStatic _api = APIStatic();
-  List<UMKMService> _allUMKM = [];
+  List<ProductModel> _allProducts = []; // Ganti nama variabel agar lebih jelas
 
   @override
   void initState() {
     super.initState();
-    _loadUMKM();
+    _loadProducts();
   }
 
-  Future<void> _loadUMKM() async {
+  Future<void> _loadProducts() async {
     try {
-      final data = await _api.getUmkmList();
+      // Panggil method yang benar dari API service
+      final data = await _api.getAllProducts(); 
       setState(() {
-        _allUMKM = data;
+        _allProducts = data;
       });
     } catch (e) {
       if (mounted) {
@@ -37,8 +39,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final populer = _allUMKM.take(5).toList();
-    final diskon = _allUMKM.where((e) => e.price < 50000).take(5).toList();
+    final populer = _allProducts.take(5).toList();
+    // final diskon = _allProducts.where((e) => e.price < 50000).take(5).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6FA),
@@ -47,12 +49,13 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           children: [
             _buildCarousel(),
-
             _buildSectionTitle('🔥 Terpopuler'),
             _buildHorizontalList(populer),
-
             _buildSectionTitle('🎓 Yuk Belajar Lagi!'),
-            _buildHorizontalList(diskon),
+            // Untuk section kedua, Anda mungkin ingin menampilkan data yang berbeda,
+            // misalnya konten edukasi, bukan produk diskon.
+            // Namun untuk saat ini kita gunakan data yang sama.
+            _buildHorizontalList(populer),
           ],
         ),
       ),
@@ -103,11 +106,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildHorizontalList(List<UMKMService> list) {
+  Widget _buildHorizontalList(List<ProductModel> list) {
     return SizedBox(
       height: 180,
       child: list.isEmpty
-          ? const Center(child: Text("Tidak ada data."))
+          ? const Center(child: Text("Memuat data..."))
           : ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -117,46 +120,51 @@ class _HomePageState extends State<HomePage> {
                 final item = list[index];
                 return SizedBox(
                   width: 140,
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Gambar
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                          child: Image.network(
-                            "http://192.168.18.35:8000/storage/product/${item.image}",
-                            height: 80,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.broken_image),
-                          ),
+                  // TAMBAHKAN GESTUREDETECTOR UNTUK NAVIGASI
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetailPage(item: item),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Rp ${item.price}',
-                                  style: const TextStyle(color: Colors.pink)),
-                              Text('⭐ 4.9',
-                                  style: TextStyle(color: Colors.orange.shade400)),
-                            ],
+                      );
+                    },
+                    child: Card(
+                      // ... (sisa Card tetap sama) ...
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                            // GUNAKAN imageUrl dari model
+                            child: Image.network(
+                              item.imageUrl ?? '', // Gunakan URL dari accessor
+                              height: 80,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                            ),
                           ),
-                        )
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title, // DIUBAH dari title ke name
+                                  maxLines: 2, // Beri ruang lebih untuk nama
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 2),
+                                Text('Rp ${item.price}', style: const TextStyle(color: Colors.pink)),
+                                // ... (sisa Text widget tetap sama) ...
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 );

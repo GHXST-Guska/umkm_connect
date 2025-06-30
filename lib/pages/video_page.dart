@@ -1,74 +1,70 @@
+// lib/pages/halamanVideo.dart
+
 import 'package:flutter/material.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:umkm_connect/services/api_static.dart';
+import 'package:umkm_connect/models/content_model.dart';
+import 'package:umkm_connect/pages/detailVideo.dart'; // Import halaman detail
 
-class VideoPlayerPage extends StatefulWidget {
-  final String videoUrl; // Contoh: 'https://www.youtube.com/watch?v=ysz5S6PUM-U'
-  final String title;
-
-  const VideoPlayerPage({
-    super.key,
-    required this.videoUrl,
-    required this.title,
-  });
+class HalamanVideo extends StatefulWidget {
+  const HalamanVideo({super.key});
 
   @override
-  State<VideoPlayerPage> createState() => _VideoPlayerPageState();
+  State<HalamanVideo> createState() => _HalamanVideoState();
 }
 
-class _VideoPlayerPageState extends State<VideoPlayerPage> {
-  late YoutubePlayerController _youtubeController;
+class _HalamanVideoState extends State<HalamanVideo> {
+  late Future<List<ContentModel>> _contentsFuture;
 
   @override
   void initState() {
-    final videoId = YoutubePlayer.convertUrlToId(widget.videoUrl);
-    _youtubeController = YoutubePlayerController(
-      initialVideoId: videoId ?? '',
-      flags: const YoutubePlayerFlags(
-        autoPlay: true,
-        mute: false,
-        loop: false,
-      ),
-    );
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    _youtubeController.dispose();
-    super.dispose();
+    // Buat objek dari APIStatic, lalu panggil metodenya
+    _contentsFuture = APIStatic().getAllContents(); 
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        title: const Text("Daftar Konten"),
       ),
-      body: Center(
-        child: YoutubePlayerBuilder(
-          player: YoutubePlayer(
-            controller: _youtubeController,
-            showVideoProgressIndicator: true,
-          ),
-          builder: (context, player) => Column(
-            children: [
-              const SizedBox(height: 20),
-              player,
-              const SizedBox(height: 20),
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+      body: FutureBuilder<List<ContentModel>>(
+        future: _contentsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          if (snapshot.hasData) {
+            final contents = snapshot.data!;
+            return ListView.builder(
+              itemCount: contents.length,
+              itemBuilder: (context, index) {
+                final content = contents[index];
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  child: ListTile(
+                    // Tampilkan gambar thumbnail jika ada
+                    title: Text(content.title),
+                    subtitle: Text(content.creator),
+                    onTap: () {
+                      // Navigasi ke halaman detail saat item diklik
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailVideo(contentId: content.id),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            );
+          }
+          return const Center(child: Text("Tidak ada konten."));
+        },
       ),
     );
   }

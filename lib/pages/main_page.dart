@@ -3,7 +3,7 @@ import 'package:umkm_connect/pages/home_page.dart';
 import 'package:umkm_connect/pages/product_page.dart';
 import 'package:umkm_connect/pages/login_page.dart';
 import 'package:umkm_connect/pages/profile_page.dart';
-import 'package:umkm_connect/pages/update_page.dart';
+import 'package:umkm_connect/pages/video_page.dart';
 import 'package:umkm_connect/services/api_static.dart';
 
 class MainPage extends StatefulWidget {
@@ -20,7 +20,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = const [
     HomePage(),
     ProductPage(),
-    UpdatePage(),
+    HalamanVideo(),
     ProfilePage(),
   ];
 

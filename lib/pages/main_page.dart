@@ -94,7 +94,7 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
       appBar: AppBar(
-        title: const Text('Smart UMKM'),
+        title: const Text('UMKM Connect'),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.pink.shade600,

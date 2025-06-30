@@ -17,7 +17,6 @@ class ContentModel {
     required this.thumbnail,
   });
 
-  // Factory constructor untuk membuat objek dari JSON
   factory ContentModel.fromJson(Map<String, dynamic> json) {
     return ContentModel(
       id: json['id'],

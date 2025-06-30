@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:umkm_connect/pages/main_menu.dart';
+import 'package:umkm_connect/pages/admin/dashboard.dart';
+import 'package:umkm_connect/pages/main_page.dart';
 import 'package:umkm_connect/services/api_static.dart';
+import 'package:umkm_connect/models/user_model.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -40,6 +42,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   @override
   void dispose() {
     _animController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -57,20 +62,37 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       final pass = _passwordController.text.trim();
 
       if (isLogin) {
-        final res = await api.login(email, pass);
-        if (res.containsKey('access_token') && mounted) {
+        // 1. Lakukan login untuk mendapatkan token
+        await api.login(email, pass);
+        
+        // 2. Jika login berhasil, ambil profil untuk mendapatkan role
+        final UserProfile userProfile = await api.getUserProfile();
+        final String role = userProfile.role;
+
+        if (!mounted) return;
+
+        // 3. Arahkan pengguna berdasarkan role mereka
+        if (role == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+          );
+        } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const MainPage()),
           );
         }
+
       } else {
-        final res = await api.register(
+        // Logika untuk Register (tetap sama)
+        await api.register(
           _nameController.text.trim(),
           email,
           pass,
         );
-        if (res.containsKey('access_token') && mounted) {
+        if (mounted) {
+          // Setelah register, user dianggap 'normal' dan diarahkan ke MainPage
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const MainPage()),
@@ -78,10 +100,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         }
       }
     } catch (e) {
-      setState(() => _errorMessage = e.toString());
+      setState(() => _errorMessage = e.toString().replaceFirst("Exception: ", ""));
     }
 
-    setState(() => _loading = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   Widget _buildTextField({
@@ -139,7 +163,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   ),
                   const SizedBox(height: 24),
 
-                  // SlideTransition hanya ketika !isLogin
                   if (!isLogin)
                     SlideTransition(
                       position: _slideAnimation,
@@ -171,7 +194,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   const SizedBox(height: 24),
 
                   if (_errorMessage.isNotEmpty)
-                    Text(_errorMessage, style: const TextStyle(color: Colors.red)),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Text(_errorMessage, style: const TextStyle(color: Colors.red)),
+                    ),
 
                   ElevatedButton(
                     onPressed: _loading ? null : _handleSubmit,
@@ -181,7 +207,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       minimumSize: const Size(double.infinity, 48),
                     ),
                     child: _loading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
                         : Text(isLogin ? 'Login' : 'Daftar'),
                   ),
 

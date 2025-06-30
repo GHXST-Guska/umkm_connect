@@ -218,6 +218,67 @@ class APIStatic {
     }
   }
 
+  Future<ProductModel> updateProduct({
+    required int id,
+    required String title,
+    required String description,
+    required int price,
+    required int stock,
+    required String category,
+    required String location,
+    File? imageFile,
+  }) async {
+    final token = await getToken();
+    final url = Uri.parse('$_baseUrl/product/update/$id');
+
+    final request = http.MultipartRequest('POST', url)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..fields['title'] = title
+      ..fields['description'] = description
+      ..fields['price'] = price.toString()
+      ..fields['stock'] = stock.toString()
+      ..fields['category'] = category
+      ..fields['location'] = location
+      ..fields['_method'] = 'POST';
+
+    if (imageFile != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'image',
+        imageFile.path,
+        filename: basename(imageFile.path),
+      ));
+    }
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(responseBody);
+      return ProductModel.fromJson(data['data'] ?? data);
+    } else {
+      try {
+        final err = jsonDecode(responseBody);
+        throw Exception(err['message'] ?? 'Gagal memperbarui produk');
+      } catch (_) {
+        throw Exception('Gagal memperbarui produk: ${response.reasonPhrase ?? responseBody}');
+      }
+    }
+  }
+  
+  Future<void> deleteProduct(int id) async {
+    final token = await getToken();
+    final url = Uri.parse('${_baseUrl}product/delete/$id');
+    final response = await http.delete(url, headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    });
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['message'] ?? 'Gagal menghapus produk');
+    }
+  }
+
   // ✅ Ambil data profil user dari endpoint /user-profile
   Future<UserProfile> getUserProfile() async {
     final token = await getToken();

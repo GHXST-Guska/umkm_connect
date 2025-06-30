@@ -22,8 +22,46 @@ class _ProductPageState extends State<ProductPage> {
 
   void _loadMyProducts() {
     setState(() {
-      _productFuture = _api.getMyProducts(); // ✅ menggunakan endpoint /product/myproduct
+      _productFuture = _api.getMyProducts();
     });
+  }
+
+  Future<void> _confirmDelete(ProductModel product) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Konfirmasi'),
+        content: Text('Yakin ingin menghapus produk "${product.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _api.deleteProduct(product.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Produk berhasil dihapus')),
+          );
+          _loadMyProducts();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus produk: $e')),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -32,6 +70,7 @@ class _ProductPageState extends State<ProductPage> {
       backgroundColor: const Color(0xFFFDF6FA),
       appBar: AppBar(
         title: const Text('Katalog Produk Saya'),
+        centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
@@ -52,35 +91,96 @@ class _ProductPageState extends State<ProductPage> {
             return const Center(child: Text('Belum ada produk.'));
           }
 
-          return ListView.builder(
-            itemCount: products.length,
+          return Padding(
             padding: const EdgeInsets.all(12),
-            itemBuilder: (context, index) {
-              final item = products[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Image.network(
-                      item.imageUrl ?? '',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
-                    ),
-                  ),
-                  title: Text(item.title),
-                  subtitle: Text('Rp ${item.price} • ${item.category}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    // TODO: Tampilkan detail atau halaman edit
+            child: GridView.builder(
+              itemCount: products.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              itemBuilder: (context, index) {
+                final item = products[index];
+                return GestureDetector(
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductFormPage(existingProduct: item),
+                      ),
+                    );
+                    if (result == true) _loadMyProducts();
                   },
-                ),
-              );
-            },
+                  child: Stack(
+                    children: [
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                              child: Image.network(
+                                item.imageUrl ?? '',
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  height: 120,
+                                  color: Colors.grey[200],
+                                  child: const Center(child: Icon(Icons.broken_image, size: 40)),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Rp ${item.price}',
+                                    style: const TextStyle(fontSize: 16, color: Colors.pink),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '📍 ${item.location}',
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Colors.white,
+                          child: IconButton(
+                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                            onPressed: () => _confirmDelete(item),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
@@ -90,7 +190,7 @@ class _ProductPageState extends State<ProductPage> {
             context,
             MaterialPageRoute(builder: (_) => const ProductFormPage()),
           );
-          if (result == true) _loadMyProducts(); // 🔄 refresh saat kembali
+          if (result == true) _loadMyProducts();
         },
         backgroundColor: Colors.pink,
         child: const Icon(Icons.add),

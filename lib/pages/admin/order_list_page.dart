@@ -32,7 +32,7 @@ class _OrderListPageState extends State<OrderListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Daftar Semua Pesanan"),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.white,
       ),
       body: RefreshIndicator(
         onRefresh: _loadOrders,

@@ -41,7 +41,7 @@ class _ShopListPageState extends State<ShopListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Manajemen Toko"),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.white,
       ),
       body: RefreshIndicator(
         onRefresh: _loadShops,

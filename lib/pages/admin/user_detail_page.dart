@@ -112,7 +112,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       child: ElevatedButton(
                         onPressed: _isProcessing ? null : _handleDelete,
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                        child: const Text("Hapus Pengguna"),
+                        child: const Text("Hapus Pengguna", style: TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],

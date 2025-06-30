@@ -81,7 +81,7 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Detail & Validasi Toko"),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.white,
       ),
       body: FutureBuilder<ShopModel>(
         future: _shopFuture,
@@ -155,16 +155,16 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
     if (shop.status == 'Menunggu Verifikasi') {
       return Row(
         children: [
-          Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : () => _handleValidation('Ditolak'), style: OutlinedButton.styleFrom(foregroundColor: Colors.red), child: const Text("Tolak"))),
+          Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : () => _handleValidation('Ditolak'), style: OutlinedButton.styleFrom(foregroundColor: Colors.red), child: const Text("Tolak", style: TextStyle(color: Colors.white)))),
           const SizedBox(width: 16),
-          Expanded(child: ElevatedButton(onPressed: _isProcessing ? null : () => _handleValidation('Telah Terverifikasi'), style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text("Setujui"))),
+          Expanded(child: ElevatedButton(onPressed: _isProcessing ? null : () => _handleValidation('Telah Terverifikasi'), style: ElevatedButton.styleFrom(backgroundColor: Colors.green), child: const Text("Setujui", style: TextStyle(color: Colors.white)))),
         ],
       );
     } else if (shop.status == 'Telah Terverifikasi') {
       return SizedBox(
         width: double.infinity,
         height: 48,
-        child: ElevatedButton(onPressed: _isProcessing ? null : _handleDelete, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text("Hapus Toko")),
+        child: ElevatedButton(onPressed: _isProcessing ? null : _handleDelete, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text("Hapus Toko", style: TextStyle(color: Colors.white),)),
       );
     }
     // Jika status 'ditolak' atau lainnya

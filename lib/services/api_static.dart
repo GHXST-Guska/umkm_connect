@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:umkm_connect/models/umkm_model.dart';
+import 'package:umkm_connect/models/content_model.dart';
 
 class APIStatic {
   // Ganti dengan IP address sesuai dengan server API Yudik
   // final String _baseUrl = "http://192.168.18.35:8000/";
-  final String _baseUrl = "http://10.23.2.97:8000/";
+  final String _baseUrl = "http://192.168.18.35:8000/";
   final _storage = const FlutterSecureStorage();
 
   // Method untuk menyimpan token
@@ -129,6 +130,54 @@ class APIStatic {
       return list.map((e) => UMKMService.fromJson(e)).toList();
     } else {
       throw Exception('Gagal mengambil data UMKM');
+    }
+  }
+
+  Future<List<ContentModel>> getAllContents() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Token tidak ditemukan, silakan login.');
+
+    // Sesuaikan endpoint jika ada prefix '/api'
+    final url = Uri.parse('${_baseUrl}contents/getall');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['data'];
+      return list.map((e) => ContentModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal mengambil daftar konten');
+    }
+  }
+
+  /// Mengambil detail satu konten berdasarkan ID.
+  Future<ContentModel> getContentDetail(int contentId) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Token tidak ditemukan, silakan login.');
+
+    // Sesuaikan endpoint jika ada prefix '/api'
+    final url = Uri.parse('${_baseUrl}contents/detail/$contentId');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return ContentModel.fromJson(data['data']);
+    } else {
+      throw Exception('Gagal mengambil detail konten');
     }
   }
 }

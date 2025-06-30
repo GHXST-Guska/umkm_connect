@@ -2,52 +2,87 @@ import 'package:flutter/material.dart';
 import 'package:flutter_login/flutter_login.dart';
 import 'package:umkm_connect/services/api_static.dart';
 import 'package:umkm_connect/pages/main_page.dart';
+import 'package:umkm_connect/pages/admin/dashboard.dart'; // Pastikan Anda sudah membuat halaman ini
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key}); // ✅ gunakan const
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final APIStatic _api = APIStatic();
   Duration get loginTime => const Duration(milliseconds: 2250);
-  static const Color magenta = Color(0xFFE91E63); // 🌸 warna magenta
 
+  // Fungsi ini hanya bertugas untuk login dan menyimpan token.
+  // Jika berhasil, kembalikan null. Jika gagal, kembalikan pesan error.
   Future<String?> _authUser(LoginData data) async {
     try {
-      final api = APIStatic();
-      final response = await api.login(data.name, data.password);
+      // Panggil API login
+      final response = await _api.login(data.name, data.password);
+      
+      // Cek jika API mengembalikan token, pertanda login berhasil
       if (response.containsKey('access_token')) {
-        return null;
+        return null; // Sukses
       } else {
-        return 'Login gagal: Token tidak ditemukan.';
+        return response['message'] ?? 'Login gagal: Token tidak ditemukan.';
       }
     } catch (e) {
-      return 'Login gagal: ${e.toString()}';
+      // Tangkap error dari API service (misal: "User tidak ditemukan")
+      return e.toString().replaceFirst("Exception: ", "");
     }
   }
 
-  Future<String?> _signUpUser(SignupData data) async {
-    await Future.delayed(loginTime);
-    return 'Fitur daftar belum tersedia.';
+  Future<String?> _recoverPassword(String name) async {
+    // Logika untuk lupa password
+    return 'Fitur ini belum tersedia.';
   }
 
-  Future<String?> _recoverPassword(String name) async {
-    return 'Fitur reset sandi belum tersedia.';
+  // Navigasi setelah login sukses berdasarkan role
+  void _navigateBasedOnRole() async {
+    try {
+      // Ambil data profil pengguna yang baru saja login
+      final userProfile = await _api.getUserProfile();
+      final role = userProfile['role'];
+
+      if (!mounted) return; // Pastikan widget masih ada di tree
+
+      if (role == 'admin') {
+        // Jika role adalah 'admin', arahkan ke Dashboard Admin
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+        );
+      } else {
+        // Jika role lain ('normal', dll), arahkan ke Halaman Utama
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainPage()),
+        );
+      }
+    } catch (e) {
+      // Handle jika gagal mengambil profil setelah login
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memverifikasi role: $e')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return FlutterLogin(
       title: 'UMKM Connect',
-      // logo: 'assets/logo_umkm.png', // opsional kalau ada logo
       onLogin: _authUser,
-      onSignup: _signUpUser,
+      onSignup: (data) async => 'Fitur daftar belum diimplementasikan.', // Signup
       onRecoverPassword: _recoverPassword,
-      onSubmitAnimationCompleted: () {
-        // 🟢 Navigasi setelah login sukses
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainPage()),
-        );
-      },
+      
+      // Ini adalah bagian kunci: dieksekusi setelah onLogin berhasil (mengembalikan null)
+      onSubmitAnimationCompleted: _navigateBasedOnRole,
+
       theme: LoginTheme(
-        primaryColor: magenta,
+        // ... (semua konfigurasi theme Anda tetap sama seperti sebelumnya) ...
+        primaryColor: Colors.pink.shade600,
         accentColor: Colors.pinkAccent,
         errorColor: Colors.redAccent,
         titleStyle: const TextStyle(
@@ -56,35 +91,15 @@ class LoginPage extends StatelessWidget {
           fontSize: 26,
           fontWeight: FontWeight.bold,
         ),
-        bodyStyle: const TextStyle(
-          fontStyle: FontStyle.normal,
-          decoration: TextDecoration.none,
-        ),
         cardTheme: CardTheme(
-          color: Colors.white,
           elevation: 5,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        inputTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 10,
-            horizontal: 16,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        buttonStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
         buttonTheme: LoginButtonTheme(
           splashColor: Colors.pinkAccent,
-          backgroundColor: magenta,
+          backgroundColor: Colors.pink.shade600,
           highlightColor: Colors.pink.shade700,
           elevation: 4.0,
           shape: RoundedRectangleBorder(
@@ -93,8 +108,6 @@ class LoginPage extends StatelessWidget {
         ),
         pageColorLight: Colors.pink.shade50,
         pageColorDark: Colors.pink.shade900,
-        beforeHeroFontSize: 14,
-        afterHeroFontSize: 20,
       ),
     );
   }

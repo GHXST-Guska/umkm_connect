@@ -4,6 +4,8 @@ class ContentModel {
   final String videoId;
   final String description;
   final String creator;
+  final String playlist;
+  final String thumbnail;
 
   ContentModel({
     required this.id,
@@ -11,6 +13,8 @@ class ContentModel {
     required this.videoId,
     required this.description,
     required this.creator,
+    required this.playlist,
+    required this.thumbnail,
   });
 
   // Factory constructor untuk membuat objek dari JSON
@@ -18,9 +22,11 @@ class ContentModel {
     return ContentModel(
       id: json['id'],
       title: json['title'],
-      videoId: json['video'], // Sesuaikan dengan key di API Anda
+      videoId: json['video'],
       description: json['description'],
       creator: json['creator'],
+      playlist: json['playlist'],
+      thumbnail: json['thumbnail'],
     );
   }
 }

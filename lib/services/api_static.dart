@@ -1,31 +1,33 @@
+import 'dart:io';
 import 'dart:convert';
+import 'package:path/path.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:umkm_connect/models/product_model.dart';
 import 'package:umkm_connect/models/content_model.dart';
+import 'package:umkm_connect/models/user_model.dart';
+import 'package:umkm_connect/models/shop_model.dart';
 
 class APIStatic {
-  // Ganti dengan IP address sesuai dengan server API Yudik
-  // final String _baseUrl = "http://192.168.18.35:8000/";
   final String _baseUrl = "http://192.168.18.35:8000/";
   final _storage = const FlutterSecureStorage();
 
-  // Method untuk menyimpan token
+  // ✅ Menyimpan token login
   Future<void> _saveToken(String token) async {
     await _storage.write(key: 'access_token', value: token);
   }
 
-  // Method untuk mendapatkan token
+  // ✅ Mengambil token
   Future<String?> getToken() async {
     return await _storage.read(key: 'access_token');
   }
 
-  // Method untuk menghapus token (logout)
+  // ✅ Hapus token (logout)
   Future<void> deleteToken() async {
     await _storage.delete(key: 'access_token');
   }
 
-  // Fungsi Register
+  // ✅ Register
   Future<Map<String, dynamic>> register(
     String name,
     String email,
@@ -40,18 +42,16 @@ class APIStatic {
 
     final responseData = json.decode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) {
-      // Jika register berhasil dan langsung login (seperti di kode Anda)
       if (responseData.containsKey('access_token')) {
         await _saveToken(responseData['access_token']);
       }
       return responseData;
     } else {
-      // Jika gagal, lempar error dengan pesan dari server
-      throw Exception(responseData['massage'] ?? 'Gagal untuk register');
+      throw Exception(responseData['message'] ?? 'Gagal melakukan registrasi');
     }
   }
 
-  // Fungsi Login
+  // ✅ Login
   Future<Map<String, dynamic>> login(String email, String password) async {
     final url = Uri.parse('$_baseUrl/login');
     final response = await http.post(
@@ -62,17 +62,16 @@ class APIStatic {
 
     final responseData = json.decode(response.body);
     if (response.statusCode == 200) {
-      // Jika login berhasil, simpan token
       if (responseData.containsKey('access_token')) {
         await _saveToken(responseData['access_token']);
       }
       return responseData;
     } else {
-      throw Exception(responseData['message'] ?? 'Gagal untuk login');
+      throw Exception(responseData['message'] ?? 'Login gagal');
     }
   }
 
-  // Fungsi Logout
+  // ✅ Logout
   Future<void> logout() async {
     final token = await getToken();
     final url = Uri.parse('$_baseUrl/logout');
@@ -84,63 +83,92 @@ class APIStatic {
         'Authorization': 'Bearer $token',
       },
     );
-
-    // Hapus token dari storage lokal
     await deleteToken();
   }
 
-  // Fungsi untuk mendapatkan data user (endpoint terproteksi)
-  Future<Map<String, dynamic>> getUserProfile() async {
+  Future<UserProfile> updateUserProfile({
+    required String name,
+    required String email,
+    String? password,
+    File? imageFile,
+  }) async {
     final token = await getToken();
-    if (token == null) {
-      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+    final url = Uri.parse('$_baseUrl/users/updateProfile');
+
+    final request =
+        http.MultipartRequest('POST', url)
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields['name'] = name
+          ..fields['email'] = email;
+
+    if (password != null && password.isNotEmpty) {
+      request.fields['password'] = password;
     }
 
-    final url = Uri.parse('$_baseUrl/user-profile');
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token', // Sertakan token di sini
-      },
-    );
+    if (imageFile != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath('path_image', imageFile.path),
+      );
+    }
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
 
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final data = jsonDecode(body);
+      return UserProfile.fromJson(data['data']);
     } else {
-      // Di sini Anda bisa menambahkan logika untuk refresh token jika status code 401
-      throw Exception('Gagal mengambil data user.');
+      final error = jsonDecode(body);
+      throw Exception(error['message'] ?? 'Gagal memperbarui profil');
     }
   }
 
-  Future<List<ProductModel>> getAllProducts() async {
+  // ✅ Bikin toko
+  Future<ShopModel> createShop({
+    required String name,
+    required File ktpFile,
+  }) async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}product/getall');
+    final url = Uri.parse('$_baseUrl/shop/save');
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token', 
-        'Accept': 'application/json'
-      },
+    final request =
+        http.MultipartRequest('POST', url)
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields['name'] = name;
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'foto_ktp',
+        ktpFile.path,
+        filename: basename(ktpFile.path),
+      ),
     );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final List list = data['data']; 
-      // Menggunakan ProductModel.fromJson yang sudah kita perbaiki
-      return list.map((e) => ProductModel.fromJson(e)).toList();
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    // ✅ Tangani case jika responseBody kosong atau bukan JSON
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      try {
+        final decoded = jsonDecode(responseBody);
+        return ShopModel.fromJson(decoded['data'] ?? decoded);
+      } catch (_) {
+        // Jika tidak bisa di-decode, tapi status 201, anggap berhasil
+        return ShopModel(id: 0, name: name, fotoKtp: null, status: 'Pending');
+      }
     } else {
-      throw Exception('Gagal mengambil data produk');
+      try {
+        final decoded = jsonDecode(responseBody);
+        throw (decoded['message'] ?? 'Gagal membuat toko');
+      } catch (e) {
+        throw ('${e.toString()}');
+      }
     }
   }
 
-  Future<List<ContentModel>> getAllContents() async {
+  Future<List<ProductModel>> getMyProducts() async {
     final token = await getToken();
-    if (token == null) throw Exception('Token tidak ditemukan, silakan login.');
-
-    // Sesuaikan endpoint jika ada prefix '/api'
-    final url = Uri.parse('${_baseUrl}contents/getall');
+    final url = Uri.parse('$_baseUrl/product/myproduct');
 
     final response = await http.get(
       url,
@@ -153,26 +181,113 @@ class APIStatic {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List list = data['data'];
+      return list.map((e) => ProductModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal mengambil produk milik sendiri');
+    }
+  }
+
+  Future<void> createProduct({
+    required String title,
+    required String description,
+    required int price,
+    required int stock,
+    required String category,
+    required String location,
+    required File imageFile,
+  }) async {
+    final token = await getToken();
+    final url = Uri.parse('$_baseUrl/product/save');
+
+    final request = http.MultipartRequest('POST', url)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..fields['title'] = title
+      ..fields['description'] = description
+      ..fields['price'] = price.toString()
+      ..fields['stock'] = stock.toString()
+      ..fields['category'] = category
+      ..fields['location'] = location
+      ..files.add(await http.MultipartFile.fromPath('image', imageFile.path));
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode != 201) {
+      final decoded = jsonDecode(responseBody);
+      throw Exception(decoded['message'] ?? 'Gagal menambahkan produk');
+    }
+  }
+
+  // ✅ Ambil data profil user dari endpoint /user-profile
+  Future<UserProfile> getUserProfile() async {
+    final token = await getToken();
+    if (token == null)
+      throw Exception('Token tidak ditemukan, silakan login ulang.');
+
+    final url = Uri.parse('${_baseUrl}user-profile');
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      return UserProfile.fromJson(jsonData);
+    } else {
+      throw Exception('Gagal mengambil data profil.');
+    }
+  }
+
+  // ✅ Ambil semua produk
+  Future<List<ProductModel>> getAllProducts() async {
+    final token = await getToken();
+    final url = Uri.parse('${_baseUrl}product/getall');
+
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['data'];
+      return list.map((e) => ProductModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal mengambil data produk');
+    }
+  }
+
+  // ✅ Ambil semua konten pelatihan
+  Future<List<ContentModel>> getAllContents() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Token tidak ditemukan, silakan login.');
+
+    final url = Uri.parse('${_baseUrl}contents/getall');
+
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['data'];
       return list.map((e) => ContentModel.fromJson(e)).toList();
     } else {
       throw Exception('Gagal mengambil daftar konten');
     }
   }
 
-  /// Mengambil detail satu konten berdasarkan ID.
+  // ✅ Detail satu konten berdasarkan ID
   Future<ContentModel> getContentDetail(int contentId) async {
     final token = await getToken();
     if (token == null) throw Exception('Token tidak ditemukan, silakan login.');
 
-    // Sesuaikan endpoint jika ada prefix '/api'
     final url = Uri.parse('${_baseUrl}contents/detail/$contentId');
 
     final response = await http.get(
       url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {

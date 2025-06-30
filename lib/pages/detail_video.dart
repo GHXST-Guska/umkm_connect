@@ -1,5 +1,3 @@
-// lib/pages/detailVideo.dart
-
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:umkm_connect/services/api_static.dart';
@@ -28,8 +26,9 @@ class _DetailVideoState extends State<DetailVideo> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFDF6FA),
       appBar: AppBar(
-        title: const Text("Detail Konten"),
+        title: const Text("Konten Video"),
       ),
       body: FutureBuilder<ContentModel>(
         future: _contentFuture,
@@ -59,10 +58,10 @@ class _DetailVideoState extends State<DetailVideo> {
                   YoutubePlayer(controller: controller),
                   const SizedBox(height: 16),
                   Text(content.title, style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 20),
                   Text("Oleh: ${content.creator}", style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 16),
-                  Text(content.description, style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 8),
+                  Text(content.description, style: Theme.of(context).textTheme.bodyLarge),
                 ],
               ),
             );

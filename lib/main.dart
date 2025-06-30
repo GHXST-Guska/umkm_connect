@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:umkm_connect/pages/login_page.dart';
-import 'package:umkm_connect/pages/main_page.dart';
+import 'package:umkm_connect/pages/main_menu.dart';
 import 'package:umkm_connect/services/api_static.dart';
 
 void main() {

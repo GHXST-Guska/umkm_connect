@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:umkm_connect/pages/profile_form.dart';
 import 'package:umkm_connect/services/api_static.dart';
+import 'package:umkm_connect/models/user_model.dart';
+import 'package:umkm_connect/pages/login_page.dart';
+import 'package:umkm_connect/pages/shop_create.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -10,7 +14,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final APIStatic _api = APIStatic();
-  late Future<Map<String, dynamic>> _profileFuture;
+  late Future<UserProfile> _profileFuture;
 
   @override
   void initState() {
@@ -29,7 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: FutureBuilder<UserProfile>(
         future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -37,87 +41,99 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Gagal: ${snapshot.error}'));
+            return Center(child: Text('Gagal memuat profil: ${snapshot.error}'));
           }
 
-          final data = snapshot.data!;
-          final name = data['name'] ?? 'Tidak ada nama';
-          final email = data['email'] ?? 'Tidak ada email';
-          final role = data['role'] ?? 'normal';
-          final imageUrl =
-              data['path_image'] ??
-              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=FC6C85&color=fff';
+          final profile = snapshot.data!;
+          final avatarUrl = profile.pathImageUrl ??
+              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.name)}&background=FC6C85&color=fff';
 
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              // 📸 Foto Profil
               Center(
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.pink.shade100,
-                  backgroundImage: NetworkImage(imageUrl),
+                  backgroundImage: NetworkImage(avatarUrl),
                 ),
               ),
               const SizedBox(height: 16),
+
+              // ℹ️ Info User
               Center(
                 child: Column(
                   children: [
                     Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      profile.name,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
-                    Text(email),
+                    Text(profile.email),
                     const SizedBox(height: 4),
-                    Text('🛍️ Role: $role'),
+                    Text('🛍️ Role: ${profile.role}'),
                   ],
                 ),
               ),
+
               const SizedBox(height: 24),
               const Divider(),
 
+              // ⚙️ Pengaturan Akun
               const Text(
                 'Pengaturan Akun',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(Icons.email),
-                title: const Text('Ganti Email'),
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Profil'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () async {
+                  final result = await Navigator.push<UserProfile>(
+                    context,
+                    MaterialPageRoute(builder: (_) => const EditProfilePage()),
+                  );
+
+                  // setelah kembali, perbarui state jika data baru tersedia
+                  if (result != null) {
+                    setState(() {
+                      _profileFuture = Future.value(result); // tampilkan data hasil update
+                    });
+                  }
+                },
               ),
               ListTile(
-                leading: const Icon(Icons.lock),
-                title: const Text('Ganti Password'),
+                leading: const Icon(Icons.store_mall_directory),
+                title: const Text('Buat Toko'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateShopPage()),
+                  );
+                },
               ),
-              ListTile(
-                leading: const Icon(Icons.location_on),
-                title: const Text('Ubah Lokasi'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: const Icon(Icons.store),
-                title: const Text('Kelola Produk/Jasa'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
-              ),
+
               const SizedBox(height: 16),
               const Divider(),
+
+              // 🚪 Logout
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title: const Text(
                   'Keluar',
                   style: TextStyle(color: Colors.red),
                 ),
-                onTap: () {
-                  // Bisa panggil logout APIStatic().logout();
+                onTap: () async {
+                  await _api.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
+                    );
+                  }
                 },
               ),
             ],

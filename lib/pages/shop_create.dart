@@ -29,25 +29,34 @@ class _CreateShopPageState extends State<CreateShopPage> {
   Future<void> _submit() async {
     if (_nameController.text.trim().isEmpty || _ktpFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap isi nama toko dan upload foto KTP')),
+        const SnackBar(
+          content: Text('Harap isi nama toko dan upload foto KTP'),
+        ),
       );
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      await _api.createShop(name: _nameController.text.trim(), ktpFile: _ktpFile!);
+      await _api.createShop(
+        name: _nameController.text.trim(),
+        ktpFile: _ktpFile!,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pengajuan toko berhasil dikirim, harap tunggu untuk divalidasi')),
+          const SnackBar(
+            content: Text(
+              'Pengajuan toko berhasil dikirim, harap tunggu untuk divalidasi',
+            ),
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal membuat toko: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal membuat toko: $e')));
       }
     }
     setState(() => _isLoading = false);
@@ -82,10 +91,16 @@ class _CreateShopPageState extends State<CreateShopPage> {
           const SizedBox(height: 16),
 
           ListTile(
-            leading: _ktpFile != null
-                ? CircleAvatar(backgroundImage: FileImage(_ktpFile!), radius: 20)
-                : const Icon(Icons.badge),
-            title: Text(_ktpFile != null ? 'KTP terpilih' : 'Upload Foto KTP Pemilik'),
+            leading:
+                _ktpFile != null
+                    ? CircleAvatar(
+                      backgroundImage: FileImage(_ktpFile!),
+                      radius: 20,
+                    )
+                    : const Icon(Icons.badge),
+            title: Text(
+              _ktpFile != null ? 'KTP terpilih' : 'Upload Foto KTP Pemilik',
+            ),
             trailing: const Icon(Icons.upload),
             onTap: _pickKtpImage,
           ),
@@ -93,13 +108,17 @@ class _CreateShopPageState extends State<CreateShopPage> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _isLoading ? null : _submit,
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.send),
+            icon:
+                _isLoading
+                    ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : const Icon(Icons.send),
             label: Text(_isLoading ? 'Mengirim...' : 'Kirim Pengajuan'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.pink,

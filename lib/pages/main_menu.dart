@@ -6,6 +6,8 @@ import 'package:umkm_connect/pages/product_page.dart';
 import 'package:umkm_connect/pages/profile_page.dart';
 import 'package:umkm_connect/pages/video_page.dart';
 import 'package:umkm_connect/services/api_static.dart';
+import 'package:umkm_connect/pages/myorder_page.dart';
+import 'package:umkm_connect/pages/cart_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -50,13 +52,6 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  void _goToProfilePage() {
-    setState(() {
-      _selectedIndex = 3; // ⬅️ Index untuk ProfilePage
-    });
-    Navigator.of(context).pop(); // ⬅️ Tutup drawer
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,9 +67,15 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.face),
-              title: const Text('Teman saya'),
-              onTap: _goToProfilePage, // ✅ Navigasi ke profil
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: const Text('Pesanan Saya'),
+              onTap: () {
+                Navigator.pop(context); // Tutup drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyOrdersPage()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.store),
@@ -107,6 +108,17 @@ class _MainPageState extends State<MainPage> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CartPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(

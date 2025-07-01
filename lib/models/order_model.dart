@@ -28,7 +28,7 @@ class OrderModel {
 
   // Helper untuk memformat tanggal
   String get formattedDate {
-    return DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(createdAt);
+    return DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(createdAt.toLocal());
   }
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {

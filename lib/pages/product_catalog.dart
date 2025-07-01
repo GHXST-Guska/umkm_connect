@@ -221,7 +221,7 @@ class _ProductCatalogState extends State<ProductCatalog> {
       decoration: InputDecoration(
         labelText: label,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
         ),

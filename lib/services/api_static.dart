@@ -11,7 +11,7 @@ import 'package:umkm_connect/models/order_model.dart';
 import 'package:umkm_connect/models/cart_model.dart';
 
 class APIStatic {
-  final String _baseUrl = "http://192.168.18.35:8000/";
+  final String _baseUrl = "https://5805-182-253-163-193.ngrok-free.app/UMKMConnect/public/";
   final _storage = const FlutterSecureStorage();
 
   // ✅ Menyimpan token login
@@ -688,6 +688,23 @@ class APIStatic {
       return list.map((e) => OrderModel.fromJson(e)).toList();
     } else {
       throw Exception('Gagal mengambil riwayat pesanan');
+    }
+  }
+
+  Future<String> requestMidtransPaymentUrl(int orderId) async {
+    final token = await getToken();
+    final url = Uri.parse('${_baseUrl}orders/$orderId/pay'); // Sesuaikan dengan rute Anda
+
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['payment_url'];
+    } else {
+      throw Exception('Gagal membuat link pembayaran');
     }
   }
 }

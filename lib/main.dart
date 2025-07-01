@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:umkm_connect/pages/admin/dashboard.dart';
+import 'package:umkm_connect/pages/admin/admin_dashboard.dart';
 import 'package:umkm_connect/pages/login_page.dart';
 import 'package:umkm_connect/pages/main_menu.dart';
 import 'package:umkm_connect/services/api_static.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:umkm_connect/models/product_model.dart';
 import 'package:umkm_connect/services/api_static.dart';
-import 'package:umkm_connect/pages/quantitySelectionSheet.dart';
+import 'package:umkm_connect/pages/quantity_selection.dart';
 
 class DetailProduct extends StatelessWidget {
   final ProductModel item;
@@ -102,7 +102,7 @@ class DetailProduct extends StatelessWidget {
             children: [
               const Icon(Icons.star, color: Colors.orange, size: 20),
               const SizedBox(width: 4),
-              Text('4.9 (rating)'), // Anda bisa menambahkan rating di model
+              Text(item.rating),
               const SizedBox(width: 16),
               const Icon(Icons.inventory_2, color: Colors.grey, size: 20),
               const SizedBox(width: 4),

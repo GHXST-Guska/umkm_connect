@@ -5,7 +5,7 @@ class ProductModel {
   final String description;
   final int price;
   final int stock;
-  final String rating; // dibaca sebagai String
+  final String rating;
   final String? image;
   final String? imageUrl;
   final String location;

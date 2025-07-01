@@ -3,14 +3,14 @@ import 'package:umkm_connect/pages/product_form.dart';
 import 'package:umkm_connect/services/api_static.dart';
 import 'package:umkm_connect/models/product_model.dart';
 
-class ProductPage extends StatefulWidget {
-  const ProductPage({super.key});
+class MyProductPage extends StatefulWidget {
+  const MyProductPage({super.key});
 
   @override
-  State<ProductPage> createState() => _ProductPageState();
+  State<MyProductPage> createState() => _MyProductPageState();
 }
 
-class _ProductPageState extends State<ProductPage> {
+class _MyProductPageState extends State<MyProductPage> {
   final APIStatic _api = APIStatic();
   late Future<List<ProductModel>> _productFuture;
 

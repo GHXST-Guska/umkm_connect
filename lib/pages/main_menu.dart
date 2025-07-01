@@ -23,7 +23,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = const [
     HomePage(),
     ProductCatalog(),
-    ProductPage(),
+    MyProductPage(),
     VideoPage(),
     ProfilePage(),
   ];
@@ -79,13 +79,14 @@ class _MainPageState extends State<MainPage> {
             ),
             ListTile(
               leading: const Icon(Icons.store),
-              title: const Text('Kelola toko'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.money),
-              title: const Text('Top-up saldo'),
-              onTap: () {},
+              title: const Text('Kelola Toko'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyProductPage()),
+                );
+              },
             ),
             const Divider(),
             ListTile(

@@ -3,14 +3,14 @@ import 'package:umkm_connect/pages/product_form.dart';
 import 'package:umkm_connect/services/api_static.dart';
 import 'package:umkm_connect/models/product_model.dart';
 
-class ProductPage extends StatefulWidget {
-  const ProductPage({super.key});
+class MyProductPage extends StatefulWidget {
+  const MyProductPage({super.key});
 
   @override
-  State<ProductPage> createState() => _ProductPageState();
+  State<MyProductPage> createState() => _MyProductPageState();
 }
 
-class _ProductPageState extends State<ProductPage> {
+class _MyProductPageState extends State<MyProductPage> {
   final APIStatic _api = APIStatic();
   late Future<List<ProductModel>> _productFuture;
 
@@ -80,13 +80,10 @@ class _ProductPageState extends State<ProductPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
             return Center(child: Text('Gagal memuat produk: ${snapshot.error}'));
           }
-
           final products = snapshot.data ?? [];
-
           if (products.isEmpty) {
             return const Center(child: Text('Belum ada produk.'));
           }
@@ -99,19 +96,17 @@ class _ProductPageState extends State<ProductPage> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.75,
+                childAspectRatio: 0.75, // Aspek rasio disesuaikan
               ),
               itemBuilder: (context, index) {
                 final item = products[index];
                 return GestureDetector(
                   onTap: () async {
-                    final result = await Navigator.push(
+                    await Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => ProductFormPage(existingProduct: item),
-                      ),
+                      MaterialPageRoute(builder: (_) => ProductFormPage(existingProduct: item)),
                     );
-                    if (result == true) _loadMyProducts();
+                    _loadMyProducts(); // Muat ulang setelah edit
                   },
                   child: Stack(
                     children: [
@@ -137,28 +132,32 @@ class _ProductPageState extends State<ProductPage> {
                                 ),
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Rp ${item.price}',
-                                    style: const TextStyle(fontSize: 16, color: Colors.pink),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '📍 ${item.location}',
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  ),
-                                ],
+                            // PERBAIKAN: Gunakan Expanded agar teks fleksibel
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Text(
+                                      item.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                    ),
+                                    Text(
+                                      'Rp ${item.price}',
+                                      style: const TextStyle(fontSize: 14, color: Colors.pink, fontWeight: FontWeight.bold),
+                                    ),
+                                    Text(
+                                      '📍 ${item.location}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -186,11 +185,11 @@ class _ProductPageState extends State<ProductPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final result = await Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ProductFormPage()),
           );
-          if (result == true) _loadMyProducts();
+          _loadMyProducts(); // Muat ulang setelah tambah produk
         },
         backgroundColor: Colors.pink,
         child: const Icon(Icons.add),

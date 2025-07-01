@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:umkm_connect/pages/admin/dashboard.dart';
+import 'package:umkm_connect/pages/admin/admin_dashboard.dart';
 import 'package:umkm_connect/pages/main_menu.dart';
 import 'package:umkm_connect/services/api_static.dart';
 import 'package:umkm_connect/models/user_model.dart';

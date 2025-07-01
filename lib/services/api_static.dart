@@ -8,6 +8,7 @@ import 'package:umkm_connect/models/content_model.dart';
 import 'package:umkm_connect/models/shop_model.dart';
 import 'package:umkm_connect/models/user_model.dart';
 import 'package:umkm_connect/models/order_model.dart';
+import 'package:umkm_connect/models/cart_model.dart';
 
 class APIStatic {
   final String _baseUrl = "http://192.168.18.35:8000/";
@@ -173,10 +174,7 @@ class APIStatic {
 
     final response = await http.get(
       url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {
@@ -189,7 +187,7 @@ class APIStatic {
   }
 
   Future<void> createProduct({
-    required String title,
+    required String title, // Ganti dari title
     required String description,
     required int price,
     required int stock,
@@ -198,28 +196,40 @@ class APIStatic {
     required File imageFile,
   }) async {
     final token = await getToken();
-    final url = Uri.parse('$_baseUrl/product/save');
+    final url = Uri.parse('${_baseUrl}product/save'); // Sesuaikan endpoint
 
-    final request = http.MultipartRequest('POST', url)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields['title'] = title
-      ..fields['description'] = description
-      ..fields['price'] = price.toString()
-      ..fields['stock'] = stock.toString()
-      ..fields['category'] = category
-      ..fields['location'] = location
-      ..files.add(await http.MultipartFile.fromPath('image', imageFile.path));
+    // Buat multipart request
+    var request = http.MultipartRequest('POST', url);
 
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
+    // Tambahkan headers
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    // Tambahkan field teks
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+    request.fields['price'] = price.toString();
+    request.fields['stock'] = stock.toString();
+    request.fields['category'] = category;
+    request.fields['location'] = location;
+
+    // Tambahkan file gambar
+    request.files.add(
+      await http.MultipartFile.fromPath('image', imageFile.path),
+    );
+
+    // Kirim request
+    var response = await request.send();
 
     if (response.statusCode != 201) {
-      final decoded = jsonDecode(responseBody);
-      throw Exception(decoded['message'] ?? 'Gagal menambahkan produk');
+      // Baca respons error jika ada
+      final respStr = await response.stream.bytesToString();
+      print(respStr);
+      throw Exception('Gagal membuat produk');
     }
   }
 
-  Future<ProductModel> updateProduct({
+  Future<void> updateProduct({
     required int id,
     required String title,
     required String description,
@@ -227,52 +237,53 @@ class APIStatic {
     required int stock,
     required String category,
     required String location,
-    File? imageFile,
+    File? imageFile, // Gambar bersifat opsional saat update
   }) async {
     final token = await getToken();
-    final url = Uri.parse('$_baseUrl/product/update/$id');
+    final url = Uri.parse('${_baseUrl}product/update/$id'); // Sesuaikan
 
-    final request = http.MultipartRequest('POST', url)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields['title'] = title
-      ..fields['description'] = description
-      ..fields['price'] = price.toString()
-      ..fields['stock'] = stock.toString()
-      ..fields['category'] = category
-      ..fields['location'] = location
-      ..fields['_method'] = 'POST';
+    var request = http.MultipartRequest(
+      'POST',
+      url,
+    ); // Gunakan POST untuk method spoofing
 
+    request.headers['Authorization'] = 'Bearer $token';
+    request.headers['Accept'] = 'application/json';
+
+    // Method Spoofing untuk memberi tahu backend ini adalah request PUT/PATCH
+    request.fields['_method'] = 'PUT';
+
+    // Tambahkan field teks
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+    request.fields['price'] = price.toString();
+    request.fields['stock'] = stock.toString();
+    request.fields['category'] = category;
+    request.fields['location'] = location;
+
+    // Tambahkan file gambar HANYA JIKA ada file baru yang dipilih
     if (imageFile != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-        'image',
-        imageFile.path,
-        filename: basename(imageFile.path),
-      ));
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
     }
 
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
+    var response = await request.send();
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(responseBody);
-      return ProductModel.fromJson(data['data'] ?? data);
-    } else {
-      try {
-        final err = jsonDecode(responseBody);
-        throw Exception(err['message'] ?? 'Gagal memperbarui produk');
-      } catch (_) {
-        throw Exception('Gagal memperbarui produk: ${response.reasonPhrase ?? responseBody}');
-      }
+    if (response.statusCode != 200) {
+      final respStr = await response.stream.bytesToString();
+      print(respStr);
+      throw Exception('Gagal memperbarui produk');
     }
   }
-  
+
   Future<void> deleteProduct(int id) async {
     final token = await getToken();
     final url = Uri.parse('${_baseUrl}product/delete/$id');
-    final response = await http.delete(url, headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    });
+    final response = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
 
     if (response.statusCode != 200) {
       final error = jsonDecode(response.body);
@@ -347,11 +358,16 @@ class APIStatic {
 
     final response = await http.post(
       url,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode(data),
     );
 
-    if (response.statusCode != 201) { // 201 Created
+    if (response.statusCode != 201) {
+      // 201 Created
       throw Exception('Gagal membuat konten baru');
     }
   }
@@ -363,11 +379,16 @@ class APIStatic {
 
     final response = await http.post(
       url,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode(data),
     );
 
-    if (response.statusCode != 200) { // 200 OK
+    if (response.statusCode != 200) {
+      // 200 OK
       throw Exception('Gagal mengupdate konten');
     }
   }
@@ -412,7 +433,10 @@ class APIStatic {
     final token = await getToken();
     final url = Uri.parse('${_baseUrl}users/getall'); // Sesuaikan endpoint
 
-    final response = await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List list = data['data'];
@@ -425,9 +449,14 @@ class APIStatic {
   /// ADMIN: Mengambil detail satu pengguna.
   Future<UserProfile> getUserDetail(int userId) async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}users/detail/$userId'); // Sesuaikan endpoint
+    final url = Uri.parse(
+      '${_baseUrl}users/detail/$userId',
+    ); // Sesuaikan endpoint
 
-    final response = await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return UserProfile.fromJson(data['data']);
@@ -439,9 +468,14 @@ class APIStatic {
   /// ADMIN: Menghapus pengguna.
   Future<void> deleteUser(int userId) async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}users/delete/$userId'); // Sesuaikan endpoint
-    
-    final response = await http.delete(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final url = Uri.parse(
+      '${_baseUrl}users/delete/$userId',
+    ); // Sesuaikan endpoint
+
+    final response = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode != 200) {
       throw Exception('Gagal menghapus pengguna');
     }
@@ -449,9 +483,14 @@ class APIStatic {
 
   Future<List<ShopModel>> getAllShops() async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}shop/shopall'); // Ganti dengan endpoint Anda
+    final url = Uri.parse(
+      '${_baseUrl}shop/shopall',
+    ); // Ganti dengan endpoint Anda
 
-    final response = await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List list = data['data'];
@@ -464,9 +503,14 @@ class APIStatic {
   /// ADMIN: Mengambil detail satu toko.
   Future<ShopModel> getShopDetail(int shopId) async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}shop/detail/$shopId'); // Ganti dengan endpoint Anda
+    final url = Uri.parse(
+      '${_baseUrl}shop/detail/$shopId',
+    ); // Ganti dengan endpoint Anda
 
-    final response = await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return ShopModel.fromJson(data['data']);
@@ -479,10 +523,14 @@ class APIStatic {
   Future<void> validateShop(int shopId, String newStatus) async {
     final token = await getToken();
     final url = Uri.parse('${_baseUrl}shop/validasi/$shopId');
-    
+
     final response = await http.post(
       url,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode({'status': newStatus}),
     );
     if (response.statusCode != 200) {
@@ -493,9 +541,14 @@ class APIStatic {
   /// ADMIN: Menghapus toko.
   Future<void> deleteShop(int shopId) async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}shop/delete/$shopId'); // Ganti dengan endpoint Anda
-    
-    final response = await http.delete(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final url = Uri.parse(
+      '${_baseUrl}shop/delete/$shopId',
+    ); // Ganti dengan endpoint Anda
+
+    final response = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode != 200) {
       throw Exception('Gagal menghapus toko');
     }
@@ -505,13 +558,136 @@ class APIStatic {
     final token = await getToken();
     final url = Uri.parse('${_baseUrl}order/getall'); // Sesuaikan endpoint
 
-    final response = await http.get(url, headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'});
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List list = data['data'];
       return list.map((e) => OrderModel.fromJson(e)).toList();
     } else {
       throw Exception('Gagal mengambil data pesanan');
+    }
+  }
+
+  Future<void> addToCart({
+    required int productId,
+    required int quantity,
+  }) async {
+    final token = await getToken();
+    // Endpoint sesuai rute Anda: POST /order/cart/{id}
+    final url = Uri.parse('${_baseUrl}order/cart/$productId');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'quantity': quantity}),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      // Baca pesan error dari server jika ada
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['message'] ?? 'Gagal menambahkan ke keranjang');
+    }
+  }
+
+  /// Membuat pesanan langsung (Buy Now).
+  Future<void> directOrder({
+    required int productId,
+    required int quantity,
+  }) async {
+    final token = await getToken();
+    // Endpoint sesuai rute Anda: POST /order/directOrder/{id}
+    final url = Uri.parse('${_baseUrl}order/directOrder/$productId');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'quantity': quantity,
+        // CATATAN: Alamat pengiriman perlu diambil dari input pengguna.
+        // Untuk contoh ini, kita hardcode.
+        'shipping_address': 'Alamat tes dari Flutter',
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['message'] ?? 'Gagal membuat pesanan');
+    }
+  }
+
+  Future<List<CartItemModel>> getCartItems() async {
+    final token = await getToken();
+    final url = Uri.parse('${_baseUrl}order/cart'); // Endpoint GET /cart
+
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['data'];
+      return list.map((e) => CartItemModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal mengambil data keranjang');
+    }
+  }
+
+  /// Melakukan checkout untuk item yang dipilih dari keranjang.
+  Future<void> checkoutFromCart({
+    required List<int> cartIds,
+    required String shippingAddress,
+  }) async {
+    final token = await getToken();
+    final url = Uri.parse(
+      '${_baseUrl}order/orderCart',
+    ); // Endpoint POST /orderCart
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'cart_ids': cartIds,
+        'shipping_address': shippingAddress,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['message'] ?? 'Gagal melakukan checkout');
+    }
+  }
+
+  Future<List<OrderModel>> getMyOrders() async {
+    final token = await getToken();
+    final url = Uri.parse('${_baseUrl}order/myorder'); // Panggil endpoint baru
+
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['data'];
+      return list.map((e) => OrderModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal mengambil riwayat pesanan');
     }
   }
 }

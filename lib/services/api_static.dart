@@ -165,7 +165,7 @@ class APIStatic {
         final decoded = jsonDecode(responseBody);
         throw (decoded['message'] ?? 'Gagal membuat toko');
       } catch (e) {
-        throw ('${e.toString()}');
+        throw (e.toString());
       }
     }
   }
@@ -296,8 +296,9 @@ class APIStatic {
   // ✅ Ambil data profil user dari endpoint /user-profile
   Future<UserProfile> getUserProfile() async {
     final token = await getToken();
-    if (token == null)
+    if (token == null) {
       throw Exception('Token tidak ditemukan, silakan login ulang.');
+    }
 
     final url = Uri.parse('${_baseUrl}user-profile');
     final response = await http.post(

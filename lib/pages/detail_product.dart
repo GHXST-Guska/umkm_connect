@@ -151,13 +151,13 @@ class DetailProduct extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
-                child: const Text('Beli Sekarang'),
                 onPressed: () => _showQuantityBottomSheet(context, isBuyNow: true),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
+                child: const Text('Beli Sekarang'),
               ),
             )
           ],

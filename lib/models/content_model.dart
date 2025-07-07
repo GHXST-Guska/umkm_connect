@@ -6,6 +6,7 @@ class ContentModel {
   final String creator;
   final String playlist;
   final String thumbnail;
+  final Map<int, String> quizTimes; // format: { menit_ke: 'soal' }
 
   ContentModel({
     required this.id,
@@ -15,6 +16,7 @@ class ContentModel {
     required this.creator,
     required this.playlist,
     required this.thumbnail,
+    required this.quizTimes,
   });
 
   factory ContentModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,8 @@ class ContentModel {
       creator: json['creator'],
       playlist: json['playlist'],
       thumbnail: json['thumbnail'],
+      quizTimes: Map<String, dynamic>.from(json['quiz_times'] ?? {})
+          .map((key, value) => MapEntry(int.parse(key), value.toString())),
     );
   }
 }

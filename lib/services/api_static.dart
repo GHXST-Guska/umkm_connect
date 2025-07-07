@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:path/path.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:umkm_connect/models/product_model.dart';
 import 'package:umkm_connect/models/content_model.dart';
 import 'package:umkm_connect/models/shop_model.dart';
@@ -749,5 +750,26 @@ class APIStatic {
     } else {
       throw Exception('Gagal mengambil data toko');
     }
+  }
+
+  // Simpan progres video (shared preferences atau backend)
+  Future<void> saveVideoProgress(int contentId, int seconds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('video_progress_$contentId', seconds);
+  }
+
+  Future<int> getVideoProgress(int contentId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('video_progress_$contentId') ?? 0;
+  }
+
+  Future<void> markQuizAsShown(int contentId, int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('quiz_shown_${contentId}_$minute', true);
+  }
+
+  Future<bool> isQuizAlreadyShown(int contentId, int minute) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('quiz_shown_${contentId}_$minute') ?? false;
   }
 }

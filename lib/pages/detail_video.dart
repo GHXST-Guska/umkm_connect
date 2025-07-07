@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:umkm_connect/services/api_static.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:umkm_connect/models/content_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DetailVideo extends StatefulWidget {
   final int contentId;
-
   const DetailVideo({super.key, required this.contentId});
 
   @override
@@ -14,108 +13,139 @@ class DetailVideo extends StatefulWidget {
 }
 
 class _DetailVideoState extends State<DetailVideo> {
-  late Future<ContentModel> _contentFuture;
-  YoutubePlayerController? _controller;
-  bool _quizShown = false;
+  // Gunakan satu Future untuk semua proses inisialisasi yang kompleks
+  late final Future<YoutubePlayerController> _controllerFuture;
+  final APIStatic _api = APIStatic();
+  ContentModel? _content; // Untuk menyimpan data konten agar bisa diakses di UI
 
   @override
   void initState() {
     super.initState();
-    _contentFuture = APIStatic().getContentDetail(widget.contentId);
+    // Panggil fungsi inisialisasi utama di initState
+    _controllerFuture = _initializePlayer();
   }
+  
+  // Fungsi async utama untuk mengambil data dan membuat controller
+  Future<YoutubePlayerController> _initializePlayer() async {
+    // 1. Ambil data konten dari API
+    final content = await _api.getContentDetail(widget.contentId);
+    
+    // Simpan data konten untuk digunakan di build method nanti
+    if (mounted) {
+      setState(() { _content = content; });
+    }
 
-  Future<void> _initController(String videoId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedSeconds = prefs.getInt('video_${widget.contentId}_seconds') ?? 0;
+    if (content.videoId.isEmpty) {
+      throw Exception("Video ID tidak ditemukan untuk konten ini.");
+    }
 
-    _controller = YoutubePlayerController(
-      initialVideoId: videoId,
+    // 2. Buat controller
+    final controller = YoutubePlayerController(
+      initialVideoId: content.videoId,
       flags: const YoutubePlayerFlags(autoPlay: false),
-    )..addListener(() async {
-      final position = _controller!.value.position.inSeconds;
+    );
 
-      // Simpan posisi terakhir
-      await prefs.setInt('video_${widget.contentId}_seconds', position);
-
-      // Tampilkan kuis saat menit ke-3 jika belum ditampilkan
-      if (!_quizShown && position >= 180) {
-        _quizShown = true;
-        _controller!.pause();
-        _showQuiz();
-      }
-    });
-
-    // Tampilkan dialog untuk melanjutkan
-    if (savedSeconds > 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showResumeDialog(savedSeconds);
-      });
+    // 3. Tambahkan listener untuk menyimpan progres dan menampilkan kuis
+    controller.addListener(() => _videoListener(controller, content));
+    
+    // 4. Setelah controller dibuat, cek progres dan tampilkan dialog jika perlu
+    final savedSeconds = await _loadVideoProgress();
+    if (savedSeconds > 5) { // Hanya tampilkan jika progres signifikan
+      _showResumeDialog(controller, savedSeconds);
+    } else {
+      controller.play(); // Mainkan dari awal jika tidak ada progres
+    }
+    
+    return controller;
+  }
+  
+  // Fungsi terpisah untuk listener agar lebih rapi
+  void _videoListener(YoutubePlayerController controller, ContentModel content) async {
+    final prefs = await SharedPreferences.getInstance();
+    final position = controller.value.position.inSeconds;
+    
+    // Simpan progres (misalnya setiap 5 detik agar tidak terlalu sering)
+    if (position > 0 && position % 5 == 0) {
+      await prefs.setInt('video_progress_${widget.contentId}', position);
+    }
+    
+    // Logika untuk menampilkan kuis dari data API
+    for (var quizEntry in content.quizTimes.entries) {
+        final quizTimeInSeconds = quizEntry.key;
+        // Cek jika waktu video cocok dengan waktu kuis
+        if (position == quizTimeInSeconds) {
+          final quizKey = 'quiz_shown_${widget.contentId}_$quizTimeInSeconds';
+          final bool quizShown = prefs.getBool(quizKey) ?? false;
+          if (!quizShown) {
+            controller.pause();
+            await prefs.setBool(quizKey, true); // Tandai kuis sudah tampil
+            _showQuizDialog(controller, quizEntry.value);
+            break; // Hentikan loop setelah kuis pertama ditemukan
+          }
+        }
     }
   }
 
-  void _showResumeDialog(int savedSeconds) {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text("Lanjutkan Menonton?"),
-            content: Text(
-              "Anda sebelumnya menonton sampai menit ke-${(savedSeconds / 60).floor()}",
+  // Helper untuk memuat progres dari SharedPreferences
+  Future<int> _loadVideoProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('video_progress_${widget.contentId}') ?? 0;
+  }
+  
+  // Menampilkan dialog untuk melanjutkan video
+  void _showResumeDialog(YoutubePlayerController controller, int savedSeconds) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Lanjutkan Menonton?"),
+          content: Text("Anda terakhir menonton di menit ke-${(savedSeconds / 60).floor()}"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.seekTo(Duration(seconds: savedSeconds));
+                controller.play();
+              },
+              child: const Text("Lanjutkan"),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Tutup dialog
-                  _controller!.seekTo(Duration(seconds: savedSeconds));
-                  _controller!.play();
-                },
-                child: const Text("Lanjutkan"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _controller!.seekTo(Duration.zero);
-                  _controller!.play();
-                },
-                child: const Text("Mulai dari Awal"),
-              ),
-            ],
-          ),
-    );
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.play();
+              },
+              child: const Text("Mulai dari Awal"),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
-  void _showQuiz() {
+  // Menampilkan dialog kuis
+  void _showQuizDialog(YoutubePlayerController controller, String question) {
     showDialog(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text("Kuis Singkat"),
-            content: const Text(
-              "Apa manfaat dari pemasaran digital untuk UMKM?\n\nA. Meningkatkan jangkauan pelanggan\nB. Membatasi promosi\nC. Mengurangi pendapatan",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _controller?.play();
-                },
-                child: const Text("Jawaban A (Benar)"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _controller?.play();
-                },
-                child: const Text("Jawaban B"),
-              ),
-            ],
-          ),
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text("Kuis Singkat!"),
+        content: Text(question),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              controller.play();
+            },
+            child: const Text("Lanjutkan Video"),
+          )
+        ],
+      ),
     );
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controllerFuture.then((controller) => controller.dispose());
     super.dispose();
   }
 
@@ -123,44 +153,38 @@ class _DetailVideoState extends State<DetailVideo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6FA),
-      appBar: AppBar(title: const Text("Konten Video")),
-      body: FutureBuilder<ContentModel>(
-        future: _contentFuture,
+      appBar: AppBar(title: Text(_content?.title ?? "Konten Video")),
+      body: FutureBuilder<YoutubePlayerController>(
+        future: _controllerFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
-            return Center(child: Text("Error: ${snapshot.error}"));
-          if (!snapshot.hasData)
-            return const Center(child: Text("Tidak ada data."));
-
-          final content = snapshot.data!;
-          if (_controller == null) _initController(content.videoId);
-
+          }
+          if (snapshot.hasError) {
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text("Gagal memuat video: ${snapshot.error}"),
+            ));
+          }
+          
+          final controller = snapshot.data!;
           return YoutubePlayerBuilder(
-            player: YoutubePlayer(controller: _controller!),
+            player: YoutubePlayer(controller: controller),
             builder: (context, player) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    player,
+                    ClipRRect(borderRadius: BorderRadius.circular(12), child: player),
                     const SizedBox(height: 16),
-                    Text(
-                      content.title,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      "Oleh: ${content.creator}",
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      content.description,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                    if (_content != null) ...[
+                      Text(_content!.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      Text("Oleh: ${_content!.creator}", style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      Text(_content!.description, style: Theme.of(context).textTheme.bodyMedium),
+                    ]
                   ],
                 ),
               );

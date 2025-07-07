@@ -1,199 +1,285 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:umkm_connect/models/order_model.dart';
+import 'package:umkm_connect/models/product_model.dart';
+import 'package:umkm_connect/models/shop_model.dart';
 import 'package:umkm_connect/pages/product_form.dart';
 import 'package:umkm_connect/services/api_static.dart';
-import 'package:umkm_connect/models/product_model.dart';
 
-class MyProductPage extends StatefulWidget {
-  const MyProductPage({super.key});
+class ProductPage extends StatefulWidget {
+  const ProductPage({super.key});
 
   @override
-  State<MyProductPage> createState() => _MyProductPageState();
+  State<ProductPage> createState() => _ProductPageState();
 }
 
-class _MyProductPageState extends State<MyProductPage> {
+class _ProductPageState extends State<ProductPage> {
   final APIStatic _api = APIStatic();
-  late Future<List<ProductModel>> _productFuture;
+  Future<ShopModel>? _shopFuture;
+  Future<List<ProductModel>>? _productsFuture;
+  Future<List<OrderModel>>? _ordersFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadMyProducts();
+    _loadData();
   }
 
-  void _loadMyProducts() {
+  Future<void> _loadData() async {
     setState(() {
-      _productFuture = _api.getMyProducts();
+      _shopFuture = _api.getMyStore();
+      _productsFuture = _api.getMyProducts();
+      _ordersFuture = _api.getMyStoreOrders();
     });
   }
 
-  Future<void> _confirmDelete(ProductModel product) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Konfirmasi'),
-        content: Text('Yakin ingin menghapus produk "${product.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await _api.deleteProduct(product.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Produk berhasil dihapus')),
-          );
-          _loadMyProducts();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menghapus produk: $e')),
-          );
-        }
-      }
-    }
+  void _navigateAndRefresh(Widget page) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF6FA),
       appBar: AppBar(
-        title: const Text('Katalog Produk Saya'),
+        title: const Text("Toko Saya"),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
       ),
-      body: FutureBuilder<List<ProductModel>>(
-        future: _productFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Gagal memuat produk: ${snapshot.error}'));
-          }
-          final products = snapshot.data ?? [];
-          if (products.isEmpty) {
-            return const Center(child: Text('Belum ada produk.'));
-          }
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: FutureBuilder<ShopModel>(
+          future: _shopFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text("Error: ${snapshot.error}")));
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: Text("Gagal memuat data toko."));
+            }
 
-          return Padding(
-            padding: const EdgeInsets.all(12),
-            child: GridView.builder(
-              itemCount: products.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.75, // Aspek rasio disesuaikan
-              ),
-              itemBuilder: (context, index) {
-                final item = products[index];
-                return GestureDetector(
-                  onTap: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ProductFormPage(existingProduct: item)),
-                    );
-                    _loadMyProducts(); // Muat ulang setelah edit
-                  },
-                  child: Stack(
-                    children: [
-                      Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                              child: Image.network(
-                                item.imageUrl ?? '',
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  height: 120,
-                                  color: Colors.grey[200],
-                                  child: const Center(child: Icon(Icons.broken_image, size: 40)),
-                                ),
-                              ),
-                            ),
-                            // PERBAIKAN: Gunakan Expanded agar teks fleksibel
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    Text(
-                                      item.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                                    ),
-                                    Text(
-                                      'Rp ${item.price}',
-                                      style: const TextStyle(fontSize: 14, color: Colors.pink, fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(
-                                      '📍 ${item.location}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Colors.white,
-                          child: IconButton(
-                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                            onPressed: () => _confirmDelete(item),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          );
-        },
+            final shop = snapshot.data!;
+            return ListView(
+              children: [
+                _buildShopHeader(shop),
+                _buildEarningsCard(shop),
+                _buildSectionTitle("Pesanan Masuk (3 Terbaru)"),
+                _buildIncomingOrdersList(),
+                _buildSectionTitle("Produk Anda"),
+                _buildMyProductsGrid(),
+                const SizedBox(height: 80),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProductFormPage()),
-          );
-          _loadMyProducts(); // Muat ulang setelah tambah produk
-        },
-        backgroundColor: Colors.pink,
+        onPressed: () => _navigateAndRefresh(const ProductFormPage()),
+        tooltip: 'Tambah Produk',
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Text(title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildShopHeader(ShopModel shop) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.pink.shade50,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 40,
+            backgroundImage: (shop.fotoProfilTokoUrl != null)
+                ? NetworkImage(shop.fotoProfilTokoUrl!)
+                : null,
+            child: (shop.fotoProfilTokoUrl == null)
+                ? const Icon(Icons.store, size: 40)
+                : null,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(shop.name,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Chip(
+                  label: Text(shop.status,
+                      style: const TextStyle(color: Colors.white)),
+                  backgroundColor:
+                      shop.status.toLowerCase().contains('verifikasi')
+                          ? Colors.green
+                          : Colors.orange,
+                )
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEarningsCard(ShopModel shop) {
+    final formattedEarnings = NumberFormat.currency(
+            locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
+        .format(shop.penghasilan);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Total Penghasilan",
+                    style: TextStyle(color: Colors.grey.shade600)),
+                Text(formattedEarnings,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            OutlinedButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Fitur ini belum tersedia.')));
+              },
+              child: const Text("Tarik Saldo"),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIncomingOrdersList() {
+    return FutureBuilder<List<OrderModel>>(
+      future: _ordersFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text("Memuat pesanan...")));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}"));
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text("Belum ada pesanan yang masuk.")));
+        }
+
+        final orders = snapshot.data!;
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: orders.length > 3 ? 3 : orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            return ListTile(
+              title: Text(order.invoiceNumber),
+              subtitle: Text("Total: ${order.formattedPrice}"),
+              trailing: Chip(
+                  label: Text(order.status),
+                  backgroundColor: _getStatusColor(order.status).withOpacity(0.2)),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMyProductsGrid() {
+    return FutureBuilder<List<ProductModel>>(
+      future: _productsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator()));
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text("Anda belum punya produk.")));
+        }
+
+        final products = snapshot.data!;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(12),
+          itemCount: products.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.8,
+          ),
+          itemBuilder: (context, index) {
+            final item = products[index];
+            return GestureDetector(
+              onTap: () =>
+                  _navigateAndRefresh(ProductFormPage(existingProduct: item)),
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    Image.network(item.imageUrl ?? '',
+                        height: 100, width: double.infinity, fit: BoxFit.cover),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return Colors.green;
+      case 'unpaid':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }

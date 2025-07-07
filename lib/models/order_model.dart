@@ -33,13 +33,16 @@ class OrderModel {
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      id: json['id'],
-      userId: json['user_id'],
+      id: json['id'] ?? 0, // Beri nilai default 0 jika null
+      userId: json['user_id'] ?? 0, // Beri nilai default 0 jika null
       invoiceNumber: json['invoice_number'] ?? 'N/A',
-      totalAmount: json['total_amount'] ?? 0,
+      totalAmount: json['total_amount'] ?? 0, // Ini sudah aman
       status: json['status'] ?? 'unknown',
       shippingAddress: json['shipping_address'] ?? 'Alamat tidak ada',
-      createdAt: DateTime.parse(json['created_at']),
+      // Lebih aman untuk memeriksa null sebelum parsing tanggal
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
     );
   }
 }

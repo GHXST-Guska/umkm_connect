@@ -23,7 +23,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = const [
     HomePage(),
     ProductCatalog(),
-    MyProductPage(),
+    ProductPage(),
     VideoPage(),
     ProfilePage(),
   ];
@@ -84,7 +84,7 @@ class _MainPageState extends State<MainPage> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const MyProductPage()),
+                  MaterialPageRoute(builder: (_) => const ProductPage()),
                 );
               },
             ),

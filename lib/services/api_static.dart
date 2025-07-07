@@ -12,7 +12,7 @@ import 'package:umkm_connect/models/cart_model.dart';
 
 class APIStatic {
   final String _baseUrl =
-      "https://e2f3-182-253-163-199.ngrok-free.app/umkmconnect/public/";
+      "https://e2f3-182-253-163-199.ngrok-free.app/UMKMConnect/public/";
   final _storage = const FlutterSecureStorage();
 
   // ✅ Menyimpan token login
@@ -157,7 +157,7 @@ class APIStatic {
         return ShopModel.fromJson(decoded['data'] ?? decoded);
       } catch (_) {
         // Jika tidak bisa di-decode, tapi status 201, anggap berhasil
-        return ShopModel(id: 0, name: name, fotoKtp: null, status: 'Pending');
+        return ShopModel(id: 0, name: name, fotoKtpUrl: null, status: 'Pending', penghasilan: 0);
       }
     } else {
       try {
@@ -708,6 +708,46 @@ class APIStatic {
       return data['payment_url'];
     } else {
       throw Exception('Gagal membuat link pembayaran');
+    }
+  }
+
+  Future<List<OrderModel>> getMyStoreOrders() async {
+    final token = await getToken();
+    // Anda perlu membuat endpoint ini di backend
+    final url = Uri.parse('${_baseUrl}shop/orders'); 
+
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['data'];
+      return list.map((e) => OrderModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal mengambil pesanan toko');
+    }
+  }
+
+  Future<ShopModel> getMyStore() async {
+    final token = await getToken();
+    // Asumsi endpoint-nya adalah /shop/show
+    final url = Uri.parse('${_baseUrl}shop/show'); 
+    
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // Asumsi API mengembalikan data toko di dalam key 'data'
+      return ShopModel.fromJson(data['data']);
+    } else if (response.statusCode == 404) {
+      throw Exception('Anda belum memiliki toko. Silakan buat toko terlebih dahulu.');
+    } else {
+      throw Exception('Gagal mengambil data toko');
     }
   }
 }

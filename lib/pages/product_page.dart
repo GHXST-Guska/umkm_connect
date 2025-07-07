@@ -42,8 +42,11 @@ class _ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Toko Saya"),
+        title: const Text('Toko Saya'),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
@@ -253,11 +256,16 @@ class _ProductPageState extends State<ProductPage> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Text(item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text('Rp ${item.price}', style: TextStyle(color: Colors.pink.shade600)),
+                            const SizedBox(height: 4),
+                            Text('📍 ${item.location}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
                       ),
                     ),
                   ],

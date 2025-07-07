@@ -12,7 +12,11 @@ import 'package:umkm_connect/models/cart_model.dart';
 
 class APIStatic {
   final String _baseUrl =
+<<<<<<< HEAD
       "https://794a-114-9-19-202.ngrok-free.app/UMKMConnect/public/";
+=======
+      "https://e2f3-182-253-163-199.ngrok-free.app/umkmconnect/public/";
+>>>>>>> 7c455c7d61036f0026567166a877283657015768
   final _storage = const FlutterSecureStorage();
 
   // ✅ Menyimpan token login
@@ -36,7 +40,7 @@ class APIStatic {
     String email,
     String password,
   ) async {
-    final url = Uri.parse('$_baseUrl/register');
+    final url = Uri.parse('${_baseUrl}register');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -56,7 +60,7 @@ class APIStatic {
 
   // ✅ Login
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final url = Uri.parse('$_baseUrl/login');
+    final url = Uri.parse('${_baseUrl}login');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -77,7 +81,7 @@ class APIStatic {
   // ✅ Logout
   Future<void> logout() async {
     final token = await getToken();
-    final url = Uri.parse('$_baseUrl/logout');
+    final url = Uri.parse('${_baseUrl}logout');
 
     await http.post(
       url,
@@ -96,7 +100,7 @@ class APIStatic {
     File? imageFile,
   }) async {
     final token = await getToken();
-    final url = Uri.parse('$_baseUrl/users/updateProfile');
+    final url = Uri.parse('${_baseUrl}users/updateProfile');
 
     final request =
         http.MultipartRequest('POST', url)
@@ -132,7 +136,7 @@ class APIStatic {
     required File ktpFile,
   }) async {
     final token = await getToken();
-    final url = Uri.parse('$_baseUrl/shop/save');
+    final url = Uri.parse('${_baseUrl}shop/save');
 
     final request =
         http.MultipartRequest('POST', url)
@@ -171,7 +175,7 @@ class APIStatic {
 
   Future<List<ProductModel>> getMyProducts() async {
     final token = await getToken();
-    final url = Uri.parse('$_baseUrl/product/myproduct');
+    final url = Uri.parse('${_baseUrl}product/myproduct');
 
     final response = await http.get(
       url,

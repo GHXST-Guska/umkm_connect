@@ -11,7 +11,8 @@ import 'package:umkm_connect/models/order_model.dart';
 import 'package:umkm_connect/models/cart_model.dart';
 
 class APIStatic {
-  final String _baseUrl = "https://5805-182-253-163-193.ngrok-free.app/UMKMConnect/public/";
+  final String _baseUrl =
+      "https://794a-114-9-19-202.ngrok-free.app/UMKMConnect/public/";
   final _storage = const FlutterSecureStorage();
 
   // ✅ Menyimpan token login
@@ -693,7 +694,9 @@ class APIStatic {
 
   Future<String> requestMidtransPaymentUrl(int orderId) async {
     final token = await getToken();
-    final url = Uri.parse('${_baseUrl}orders/$orderId/pay'); // Sesuaikan dengan rute Anda
+    final url = Uri.parse(
+      '${_baseUrl}orders/$orderId/pay',
+    ); // Sesuaikan dengan rute Anda
 
     final response = await http.post(
       url,
